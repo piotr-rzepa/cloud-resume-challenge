@@ -1,0 +1,198 @@
+* {
+  margin: 0 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 12px;
+  font-family: Georgia;
+  color: #333333;
+}
+
+.summary {
+  grid-area: header;
+}
+
+.socials {
+  grid-area: social;
+}
+
+.container__left {
+  grid-area: left;
+}
+
+.container__right {
+  grid-area: right;
+}
+
+.footer {
+  grid-area: footer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  display: grid;
+  width: 50%;
+  grid-template-columns: 55% 45%;
+  grid-template-rows: auto;
+  grid-template-areas:
+    "header social"
+    "left right"
+    "footer footer";
+  margin: 5rem auto;
+  padding: 1.5rem;
+  border-top: 0.5rem solid black;
+  background-color: #f5f5f5;
+  box-shadow: rgba(9, 30, 66, 0.25) 0px 4px 8px -2px,
+    rgba(9, 30, 66, 0.08) 0px 0px 0px 1px;
+}
+
+.container__left,
+.container__right {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.summary .summary__headline {
+  margin-bottom: 0.75rem;
+}
+
+.work-experience {
+  display: flex;
+  flex-direction: column;
+}
+
+.key-point {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.key-point__icon img {
+  padding: 0 0.5rem;
+}
+
+.socials {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.social__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 auto auto;
+}
+
+.social__item img {
+  padding: 0.1rem 0.5rem;
+}
+
+.knowledge__item {
+  display: flex;
+  flex-direction: column;
+}
+
+.knowledge__item h4,
+.knowledge__item p,
+.knowledge__item small {
+  padding: 0.2rem 0;
+  font-size: 1rem;
+}
+
+.knowledge__item .github-link {
+  padding: 0.2rem 0;
+  margin: auto 0;
+  width: 38%;
+}
+
+.knowledge__item .github-link img {
+  width: 10%;
+  height: 10%;
+}
+
+.certificates__badges {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+}
+
+.certificates__badges__description {
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.work-experience .knowledge__items {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.knowledge__items .knowledge__item {
+  padding: 0.5rem;
+}
+
+.technical-skills__items {
+  padding: 0.5rem 0;
+}
+
+.technical-skills__item {
+  padding: 0.3em 0;
+}
+
+.font--georgia {
+  font-family: Georgia;
+}
+
+.text--uppercase {
+  text-transform: uppercase;
+}
+
+small {
+  font-style: italic;
+}
+
+.summary__headline h2 {
+  letter-spacing: 3px;
+  font-weight: normal;
+  font-size: 2rem;
+}
+
+.summary__headline h3 {
+  font-weight: normal;
+  font-style: italic;
+  color: orangered;
+  font-size: 1.5rem;
+}
+
+.certificates__badges__description img {
+  width: 18%;
+}
+
+ul {
+  list-style-type: square;
+}
+
+ul li {
+  padding: 0.4rem;
+}
+
+a {
+  outline: none;
+  text-decoration: none;
+}
+
+a:link {
+  color: #265301;
+}
