@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: detect-aws-credentials
+      - id: forbid-submodules
+      - id: name-tests-test
+      - id: requirements-txt-fixer
+      - id: sort-simple-yaml
+  - repo: https://github.com/pre-commit/mirrors-jshint
+    rev: v2.13.6
+    hooks:
+      - id: jshint
+        name: JavaScript Linter
+  - repo: https://github.com/aws-cloudformation/cfn-lint
+    rev: v0.72.9
+    hooks:
+      - id: cfn-python-lint
+        name: AWS CloudFormation Linter
+        args: [-t, src/infra/*.yaml, --debug]
