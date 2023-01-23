@@ -12,25 +12,44 @@ The area of interest chosen by me to do those extensions if possible is **DevOps
 
 After completing the challenge, the practitioner is able to gain multiple skills, related (but not limited) to AWS ecosystem:
 
-* Software Development (Frontend / Backend perspective)
-* IaC (Infrastructure as Code) using CloudFormation, SAM, CDK
-* CI/CD (AWS CodeBuild, AWS CodeDeploy, AWS CodePipeline)
-* Serverless Architecture on AWS (Lambda, API Gateway, DynamoDB, S3)
-* Security (IAM, bucket policies, API authentication/authorization)
-* Networking (DNS if using Route53, ALB, Routing/IP traffic if creating own VPCs/subnets)
-* many more
+- Software Development (Frontend / Backend perspective)
+- IaC (Infrastructure as Code) using CloudFormation, SAM, CDK
+- CI/CD (AWS CodeBuild, AWS CodeDeploy, AWS CodePipeline)
+- Serverless Architecture on AWS (Lambda, API Gateway, DynamoDB, S3)
+- Security (IAM, bucket policies, API authentication/authorization)
+- Networking (DNS if using Route53, ALB, Routing/IP traffic if creating own VPCs/subnets)
+- many more!
 
-## 1. Certification
+## Challenge stages
 
-First challenge is to complete [AWS Cloud Practitioner](https://aws.amazon.com/certification/certified-cloud-practitioner/) certification exam.
-I [successfully completed]() the exam on 20.01.2023
+### Stage 1 - Certification
 
-## 2. Creating Front End
+First challenge is to complete [AWS Cloud Practitioner](https://aws.amazon.com/certification/certified-cloud-practitioner/) certification exam.\
+I [successfully passed](https://www.credly.com/badges/7dd19137-0b34-47b3-8e50-6d3acf195a16/public_url) the exam on 20.01.2023
 
-### HTML
+### Stage 2 - Creating Front End
 
-The resume should be created using HTML
+#### HTML
 
-### CSS
+The resume should be created using HTML. It does not have to be pretty or contain sublime styling, because the challenge is not about ideal styling and responsive web design.
+I've used grid + flex displays to create two a simple layout:
 
-The resume should be styled using CSS
+| Cell 00: Short summary           | Cell 01: Social links             |
+| -------------------------------- | --------------------------------- |
+| Cell 10: Work experience section | Cell 11: Technical skills section |
+| Cell 20: Education section       | Cell 21: Certificates section     |
+| Cell 30: Footer section          | Cell 31: Footer section           |
+
+#### CSS
+
+The resume should be just a little styled using _CSS_, to somewhat resemble the actual resume.
+
+#### JavaScript
+
+The resume should include simple JS script for counting number of visitors.\
+The first version is using `localStorage` class as a counter storage, later migrating to _AWS DynamoDB_.
+
+#### Static assets
+
+The resume contains multiple icons in _SVG_ format.
+All of them were downloaded under the [iconmonstr license](https://iconmonstr.com/license/) from [iconmonstr.com](https://iconmonstr.com/share-11-svg/).
