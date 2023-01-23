@@ -1,0 +1,45 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  An Amazon S3 Bucket configured as a static web site hosting.
+
+Parameters:
+  BucketNamePrefix:
+    Type: String
+    Default: cloud-resume-challenge
+
+Resources:
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Sub "przepk-${BucketNamePrefix}-website"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      Tags:
+        - Key: project
+          Value: cloud-resume-challenge
+  BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      PolicyDocument:
+        Id: CloudResumeChallengeWebsiteBucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref S3Bucket, /*]]
+      Bucket: !Ref S3Bucket
+
+Outputs:
+  CloudResumeWebsiteURL:
+    Value: !GetAtt S3Bucket.WebsiteURL
+    Description: URL for static website hosted on Amazon S3
+  CloudResumeSecureS3BucketURL:
+    Value: !Join ["", ["https://", !GetAtt S3Bucket.DomainName]]
+    Description: Name of the Cloud Resume S3 Bucket to hold static website content
