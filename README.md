@@ -53,3 +53,22 @@ The first version is using `localStorage` class as a counter storage, later migr
 
 The resume contains multiple icons in _SVG_ format.
 All of them were downloaded under the [iconmonstr license](https://iconmonstr.com/license/) from [iconmonstr.com](https://iconmonstr.com/share-11-svg/).
+
+#### CloudFront
+
+The resume page is available via both S3 Bucket Public Endpoint and CloudFront Distribution Domain Name.
+The requests from HTTP are redirected to HTTPS.
+CloudFront Distribution is contained within `template.yaml` as a part of Infrastructure as Code setup.
+
+#### Q&A
+
+- What aspect of Chunk 1's work did you
+  find the most difficult?
+  - Going directly for IaC paradigm and creating resources using CloudFormation / SAM Template
+- Note one or two problems you
+  overcame to get the static site deployed
+  - By Default, The AWS S3 had a Bucket ACLs enabled, which was preventing me from applying bucket policy.
+    To fix this, I had to dig deep into AWS CloudFormation Documentation for S3 and find corresponding properties to set
+- What's something you'd have done time?
+  - I'd set automatic distribution ID discovery for CloudFront in the GitHub Actions (as of now, the distribution ID is set as secret and deleting the whole stack would require to update the distribution ID for cache invalidation)
+  - Completing DevOps mode for this stage taught me how to provide CI/CD for cloud-based deployment and how easy is to roll out the changes if the infrastructure is implemented using IaC paradigm
