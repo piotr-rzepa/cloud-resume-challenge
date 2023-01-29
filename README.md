@@ -53,3 +53,9 @@ The first version is using `localStorage` class as a counter storage, later migr
 
 The resume contains multiple icons in _SVG_ format.
 All of them were downloaded under the [iconmonstr license](https://iconmonstr.com/license/) from [iconmonstr.com](https://iconmonstr.com/share-11-svg/).
+
+#### CloudFront
+
+The resume page is available via both S3 Bucket Public Endpoint and CloudFront Distribution Domain Name.
+The requests from HTTP are redirected to HTTPS.
+CloudFront Distribution is contained within `template.yaml` as a part of Infrastructure as Code setup.

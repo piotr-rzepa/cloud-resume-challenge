@@ -22,4 +22,4 @@ repos:
     hooks:
       - id: cfn-python-lint
         name: AWS CloudFormation Linter
-        args: [-t, src/infra/*.yaml, --debug]
+        args: [-t, template.yaml, --debug]

@@ -8,6 +8,7 @@ Parameters:
   BucketNamePrefix:
     Type: String
     Default: cloud-resume-challenge
+    Description: Prefix of the bucket to be configured as static website
 
 Resources:
   S3Bucket:
@@ -22,6 +23,7 @@ Resources:
       Tags:
         - Key: project
           Value: cloud-resume-challenge
+
   BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -36,6 +38,33 @@ Resources:
             Resource: !Join ["", ["arn:aws:s3:::", !Ref S3Bucket, /*]]
       Bucket: !Ref S3Bucket
 
+  CloudResumeCFDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt S3Bucket.DomainName
+            Id: cloudResumeS3Origin
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: cloudResumeS3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+          CachePolicyId: b2884449-e4de-46a7-ac36-70bc7f1ddd6d
+          AllowedMethods:
+            - HEAD
+            - GET
+        Enabled: "true"
+        HttpVersion: http2
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: "true"
+      Tags:
+        - Key: project
+          Value: cloud-resume-challenge
+
 Outputs:
   CloudResumeWebsiteURL:
     Value: !GetAtt S3Bucket.WebsiteURL
@@ -43,3 +72,7 @@ Outputs:
   CloudResumeSecureS3BucketURL:
     Value: !Join ["", ["https://", !GetAtt S3Bucket.DomainName]]
     Description: Name of the Cloud Resume S3 Bucket to hold static website content
+  CloudResumeCFDomainName:
+    Value:
+      !Join ["", ["https://", !GetAtt CloudResumeCFDistribution.DomainName]]
+    Description: Name of the Cloud Front distribution used to serve static website content
