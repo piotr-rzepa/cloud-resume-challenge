@@ -8,35 +8,50 @@ Parameters:
   ProjectNameTag:
     Type: String
     Default: cloud-resume-challenge
-    Description: Value used to indicate the resource as a part of the Cloud Resume Challenge
+    MinLength: "3"
+    MaxLength: "45"
+    Description: Value used to indicate the resource as a part of the Cloud Resume Challenge.
+
+  LambdaHandlerFunctionName:
+    Type: String
+    Default: handler
+    Description: Name of the handler Lambda function. Defaults to "handler".
+
+  LambdaPythonRuntime:
+    Type: String
+    Default: python3.9
+    AllowedValues:
+      - python3.9
+      - python3.8
+      - python3.7
+    Description: Version of Python Runtime for Lambda. Defaults to python3.9.
 
 Resources:
   S3Bucket:
     Type: "AWS::S3::Bucket"
     Properties:
       BucketName: !Sub "przepk-${ProjectNameTag}-website"
-      WebsiteConfiguration:
-        IndexDocument: index.html
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       Tags:
         - Key: project
           Value: !Sub ${ProjectNameTag}
 
-  BucketPolicy:
-    Type: "AWS::S3::BucketPolicy"
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
-      PolicyDocument:
-        Id: CloudResumeChallengeWebsiteBucketPolicy
-        Version: 2012-10-17
-        Statement:
-          - Sid: PublicReadForGetBucketObjects
-            Effect: Allow
-            Principal: "*"
-            Action: "s3:GetObject"
-            Resource: !Join ["", ["arn:aws:s3:::", !Ref S3Bucket, /*]]
-      Bucket: !Ref S3Bucket
+      OriginAccessControlConfig:
+        Description: Origin Access Control for cloud resume S3 bucket
+        Name: !Sub "przepk-${ProjectNameTag}-website-OAC"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
 
   CloudResumeCFDistribution:
     Type: AWS::CloudFront::Distribution
@@ -45,8 +60,9 @@ Resources:
         Origins:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: cloudResumeS3Origin
-            CustomOriginConfig:
-              OriginProtocolPolicy: https-only
+            OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
         DefaultCacheBehavior:
           TargetOriginId: cloudResumeS3Origin
           ViewerProtocolPolicy: redirect-to-https
@@ -58,12 +74,46 @@ Resources:
         Enabled: true
         HttpVersion: http2
         DefaultRootObject: index.html
+        Comment: !Sub ${AWS::StackName} distribution
         PriceClass: PriceClass_100
+        IPV6Enabled: false
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
       Tags:
         - Key: project
           Value: !Sub ${ProjectNameTag}
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Id: CloudResumeChallengeWebsiteBucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: "s3:GetObject"
+            Resource: !Join ["", ["arn:aws:s3:::", !Ref S3Bucket, /*]]
+            Condition:
+              StringLike:
+                "AWS:SourceArn":
+                  - !Join [
+                      "",
+                      [
+                        !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/",
+                        !Ref CloudResumeCFDistribution,
+                      ],
+                    ]
+      Bucket: !Ref S3Bucket
+
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Tags:
+        project: !Sub ${ProjectNameTag}
 
   DynamoDBVisitorsTable:
     Type: AWS::DynamoDB::Table
@@ -82,10 +132,39 @@ Resources:
         - Key: project
           Value: !Sub ${ProjectNameTag}
 
+  VisitorsCounterUpdater:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: !Sub ${LambdaPythonRuntime}
+      Handler: !Sub app.${LambdaHandlerFunctionName}
+      PackageType: Zip
+      Tags:
+        project: !Sub ${ProjectNameTag}
+      FunctionName: !Sub "przepk-${ProjectNameTag}-website-visitors-handler"
+      # SAM Template does not support intrinsic functions in the CodeUri field of AWS::Serverless::Function
+      # That is why I was not able to inject the value from Parameters: section
+      CodeUri: src/backend/lambda/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBVisitorsTable
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBVisitorsTable
+          REGION: eu-west-1
+          WEBSITE_CLOUDFRONT_DOMAIN:
+            !Join [
+              "",
+              ["https://", !GetAtt CloudResumeCFDistribution.DomainName],
+            ]
+      Events:
+        ApiGatewayEvent:
+          Type: Api
+          Properties:
+            Path: /visitors
+            Method: post
+            RestApiId: !Ref ApiGatewayApi
+
 Outputs:
-  CloudResumeWebsiteURL:
-    Value: !GetAtt S3Bucket.WebsiteURL
-    Description: URL for static website hosted on Amazon S3
   CloudResumeSecureS3BucketURL:
     Value: !Join ["", ["https://", !GetAtt S3Bucket.DomainName]]
     Description: Name of the Cloud Resume S3 Bucket to hold static website content
@@ -93,3 +172,9 @@ Outputs:
     Value:
       !Join ["", ["https://", !GetAtt CloudResumeCFDistribution.DomainName]]
     Description: Name of the Cloud Front distribution used to serve static website content
+  # CloudFrontDistributionID:
+  #   Value: !Ref CloudResumeCFDistribution
+  #   Description: Distribution ID of created CloudFormation Distribution
+  ApiGatewayEndpoint:
+    Description: "API Gateway Prod stage endpoint"
+    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
