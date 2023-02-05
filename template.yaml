@@ -5,16 +5,16 @@ Description: >
   An Amazon S3 Bucket configured as a static web site hosting.
 
 Parameters:
-  BucketNamePrefix:
+  ProjectNameTag:
     Type: String
     Default: cloud-resume-challenge
-    Description: Prefix of the bucket to be configured as static website
+    Description: Value used to indicate the resource as a part of the Cloud Resume Challenge
 
 Resources:
   S3Bucket:
     Type: "AWS::S3::Bucket"
     Properties:
-      BucketName: !Sub "przepk-${BucketNamePrefix}-website"
+      BucketName: !Sub "przepk-${ProjectNameTag}-website"
       WebsiteConfiguration:
         IndexDocument: index.html
       OwnershipControls:
@@ -22,7 +22,7 @@ Resources:
           - ObjectOwnership: BucketOwnerEnforced
       Tags:
         - Key: project
-          Value: cloud-resume-challenge
+          Value: !Sub ${ProjectNameTag}
 
   BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
@@ -55,15 +55,32 @@ Resources:
           AllowedMethods:
             - HEAD
             - GET
-        Enabled: "true"
+        Enabled: true
         HttpVersion: http2
         DefaultRootObject: index.html
         PriceClass: PriceClass_100
         ViewerCertificate:
-          CloudFrontDefaultCertificate: "true"
+          CloudFrontDefaultCertificate: true
       Tags:
         - Key: project
-          Value: cloud-resume-challenge
+          Value: !Sub ${ProjectNameTag}
+
+  DynamoDBVisitorsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "CounterName"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "CounterName"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      TableName: !Sub "przepk-${ProjectNameTag}-website-visitors"
+      Tags:
+        - Key: project
+          Value: !Sub ${ProjectNameTag}
 
 Outputs:
   CloudResumeWebsiteURL:
