@@ -22,12 +22,14 @@ After completing the challenge, the practitioner is able to gain multiple skills
 
 ## Challenge stages
 
-### Stage 1 - Certification
+### Stage 0 - Certification
 
 First challenge is to complete [AWS Cloud Practitioner](https://aws.amazon.com/certification/certified-cloud-practitioner/) certification exam.\
 I [successfully passed](https://www.credly.com/badges/7dd19137-0b34-47b3-8e50-6d3acf195a16/public_url) the exam on 20.01.2023
 
-### Stage 2 - Creating Front End
+### Stage 1 - Creating Front End
+
+This section is about building the visual representation of resume using plain HTML, CSS and JavaScript (which gets more important on stage 2)
 
 #### HTML
 
@@ -56,7 +58,8 @@ All of them were downloaded under the [iconmonstr license](https://iconmonstr.co
 
 #### CloudFront
 
-The resume page is available via both S3 Bucket Public Endpoint and CloudFront Distribution Domain Name.
+The resume page is available only via CloudFront Distribution Name.
+The S3 Bucket serving the static content is private - OAC (Origin Access Control) is configured and associated with CloudFront Distribution to allow entering the resume page only from CDN.
 The requests from HTTP are redirected to HTTPS.
 CloudFront Distribution is contained within `template.yaml` as a part of Infrastructure as Code setup.
 
@@ -72,3 +75,31 @@ CloudFront Distribution is contained within `template.yaml` as a part of Infrast
 - What's something you'd have done time?
   - I'd set automatic distribution ID discovery for CloudFront in the GitHub Actions (as of now, the distribution ID is set as secret and deleting the whole stack would require to update the distribution ID for cache invalidation)
   - Completing DevOps mode for this stage taught me how to provide CI/CD for cloud-based deployment and how easy is to roll out the changes if the infrastructure is implemented using IaC paradigm
+
+### Stage 2 - Building the API
+
+This section is about extending local visitor counter (written in JavaScript) to a full API which saves the values in AWS DynamoDB database
+
+#### Database
+
+The visitor counter is saved and retrieved from a single Table in AWS DynamoDB.
+There is a single Item (record) in DynamoDB table, which gets constantly updated when a new visitor opens the page.
+
+| Primary key                | Attributes |
+| -------------------------- | ---------- |
+| Partition key: CounterName | count      |
+| visitors                   | 10         |
+
+#### API
+
+The JavaScript code is not talking directly to the DynamoDB. Instead, Amazon API Gateway is set with one POST route, triggering Lambda function responsible for updating a visitor counter.
+
+```mermaid
+sequenceDiagram;
+Client->>Website: GET static content
+Website->>API Gateway: POST /visitor
+API Gateway->>Lambda function: Trigger
+Lambda function->>DynamoDB: Increase visitor count by 1
+Lambda function-->>Website: Return total visitor count
+Website->>Client: Resume with up-to-date visitors
+```
