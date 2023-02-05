@@ -6,7 +6,7 @@ stack_name = "przepk-cloud-resume-challenge"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1g0ce7x42iup5"
 s3_prefix = "przepk-cloud-resume-challenge"
 region = "eu-west-1"
-confirm_changeset = false
+confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "BucketNamePrefix=\"cloud-resume-challenge\""
+parameter_overrides = "ProjectNameTag=\"cloud-resume-challenge\" LambdaHandlerFunctionName=\"handler\" LambdaPythonRuntime=\"python3.9\""
 image_repositories = []
