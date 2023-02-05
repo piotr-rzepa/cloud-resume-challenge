@@ -133,6 +133,3 @@ dmypy.json
 
 # aws-sam build output dir
 .aws*
-
-# aws sam config file
-samconfig.toml
