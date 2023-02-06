@@ -112,6 +112,10 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
+      Cors:
+        AllowOrigin: "'https://d124b0ft49cngv.cloudfront.net'"
+        AllowHeaders: "'Content-Type,Origin'"
+        AllowMethods: "'POST,OPTIONS'"
       Tags:
         project: !Sub ${ProjectNameTag}
 
@@ -165,16 +169,10 @@ Resources:
             RestApiId: !Ref ApiGatewayApi
 
 Outputs:
-  CloudResumeSecureS3BucketURL:
-    Value: !Join ["", ["https://", !GetAtt S3Bucket.DomainName]]
-    Description: Name of the Cloud Resume S3 Bucket to hold static website content
   CloudResumeCFDomainName:
     Value:
       !Join ["", ["https://", !GetAtt CloudResumeCFDistribution.DomainName]]
     Description: Name of the Cloud Front distribution used to serve static website content
-  # CloudFrontDistributionID:
-  #   Value: !Ref CloudResumeCFDistribution
-  #   Description: Distribution ID of created CloudFormation Distribution
   ApiGatewayEndpoint:
     Description: "API Gateway Prod stage endpoint"
     Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"

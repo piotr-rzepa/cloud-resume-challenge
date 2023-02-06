@@ -39,7 +39,7 @@ def handler(event, context):
         "body": json.dumps(data),
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Headers": "Content-Type, Origin",
             "Access-Control-Allow-Origin": os.getenv("WEBSITE_CLOUDFRONT_DOMAIN", "*"),
             "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
         },
