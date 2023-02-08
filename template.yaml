@@ -26,6 +26,11 @@ Parameters:
       - python3.7
     Description: Version of Python Runtime for Lambda. Defaults to python3.9.
 
+  SNSTopicEndpoint:
+    Type: String
+    Default: piotr_rzepa@o2.pl
+    Description: The endpoint that user wants to receive notifications. Defaults to an email address
+
 Resources:
   S3Bucket:
     Type: "AWS::S3::Bucket"
@@ -167,6 +172,66 @@ Resources:
             Path: /visitors
             Method: post
             RestApiId: !Ref ApiGatewayApi
+
+  CloudResumeMetricsSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ProjectNameTag}-sns-topic
+      Subscription:
+        - Endpoint: !Sub ${SNSTopicEndpoint}
+          Protocol: email
+      Tags:
+        - Key: project
+          Value: !Sub ${ProjectNameTag}
+
+  CloudWatchLambdaCriticalErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: true
+      AlarmDescription: !Sub "Lambda Erroneous Metrics Alarm for ${VisitorsCounterUpdater}"
+      AlarmName: !Sub "Lambda-${VisitorsCounterUpdater}-Error-Alarm"
+      AlarmActions:
+        - !Ref CloudResumeMetricsSNSTopic
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      # 30% Of total Lambda invocations resulting in error will trigger the alarm
+      Threshold: 0.3
+      DatapointsToAlarm: 1
+      TreatMissingData: missing
+      Metrics:
+        - Id: e1
+          Expression: !Sub "m2/m1*100"
+          Label: "Lambda Invocations resulting in error (%)"
+          ReturnData: true
+
+        - Id: !Sub m1
+          MetricStat:
+            Metric:
+              # List of AWS Services that publish CloudWatch metrics
+              # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/aws-services-cloudwatch-metrics.html
+              Namespace: AWS/Lambda
+              MetricName: Invocations
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref VisitorsCounterUpdater
+            Period: 300
+            Stat: Sum
+          # Only evaluated math expression should return data - in this case, errors / invocations
+          ReturnData: false
+
+        - Id: m2
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref VisitorsCounterUpdater
+                - Name: Resource
+                  Value: !Ref VisitorsCounterUpdater
+            Period: 300
+            Stat: Sum
+          ReturnData: false
 
 Outputs:
   CloudResumeCFDomainName:
