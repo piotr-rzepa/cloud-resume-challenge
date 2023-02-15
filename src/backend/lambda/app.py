@@ -22,8 +22,8 @@ def handler(event, context):
         )
         currentVisitCount = 1
     else:
-        # Convert from decimal.Decimal to str
-        currentVisitCount = str(response["Item"]["visits"] + 1)
+        # Convert from decimal.Decimal to int
+        currentVisitCount = int(response["Item"]["visits"]) + 1
 
     logging.info("Incrementing visits counter by 1")
     dynamodb_table.update_item(
