@@ -1,66 +1,107 @@
-name: Build, Deploy and Synchronize Static S3 Website
+name: Test, Build and Deploy Infrastructure needed for Cloud Resume Website
 
 on:
   push:
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "src/frontend/**"
       - "template.yaml"
 
+env:
+  PYTHON_VERSION: 3.11
+  UBUNTU_VERSION: 22.04
+  BACKEND_PATH: src/backend
+  FRONTEND_PATH: src/frontend
+  DEPLOYMENT_REGION: eu-west-1
+
 jobs:
+  testing:
+    runs-on: ubuntu-${{ env.UBUNTU_VERSION }}
+    name: Run unit tests for Lambda backend service
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov coverage flake8
+      - name: Run flake8 linter for Python
+        run: |
+          flake8 ${{ env.BACKEND_PATH }} --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 ${{ env.BACKEND_PATH }} --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Run pytest with coverage report
+        run: |
+          pytest -vvv --capture=tee-sys --cov=${{ env.BACKEND_PATH }}
+
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-${{ env.UBUNTU_VERSION }}
+    needs:
+      - testing
     name: Build and Deploy SAM Template
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
-      - uses: aws-actions/setup-sam@v2
-      - uses: aws-actions/configure-aws-credentials@v1
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-1
-      - run: sam build --use-container
-      - run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+          aws-region: ${{ env.DEPLOYMENT_REGION }}
+      - name: Build AWS SAM Template
+        run: sam build --use-container
+      - name: Deploy SAM Template to AWS
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
 
   invalidate-cdn-cache:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-${{ env.UBUNTU_VERSION }}
     needs:
       - deploy
     name: Invalidate CDN cache on CloudFront
     steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/configure-aws-credentials@v1
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-1
+          aws-region: ${{ env.DEPLOYMENT_REGION }}
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: eu-west-1
-      - run: |
+      - name: Invalidate CloudFront Cache
+        run: |
           aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION_ID }} --paths "/*"
 
   sync-s3-bucket:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-${{ env.UBUNTU_VERSION }}
     needs:
-      - deploy
       - invalidate-cdn-cache
     name: Sync S3 Bucket content
     steps:
-      - uses: actions/checkout@v2
-      - uses: jakejarvis/s3-sync-action@master
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      - name: Sync local frontend files with S3 bucket
+        uses: jakejarvis/s3-sync-action@master
         with:
-          args: --delete
+          args: --delete --exclude ${{ env.FRONTEND_PATH }}/test
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: eu-west-1
-          SOURCE_DIR: src/frontend
+          AWS_REGION: ${{ env.DEPLOYMENT_REGION }}
+          SOURCE_DIR: ${{ env.FRONTEND_PATH }}
