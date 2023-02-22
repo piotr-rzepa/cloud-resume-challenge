@@ -133,3 +133,6 @@ dmypy.json
 
 # aws-sam build output dir
 .aws*
+
+# node_modules
+node_modules/
