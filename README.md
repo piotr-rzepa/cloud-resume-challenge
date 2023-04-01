@@ -6,7 +6,7 @@ The main goal is to create and deploy the static website hosting a resume of the
 The additional steps include integrating it with database, providing an API, using automation for building, testing and deploying the code and the infrastructure and many others.
 Apart from standard objective, most of the steps include optional extensions recommendation. They are different from the core task and focus on practicing concrete set of skills in one of the specific areas.
 
-The area of interest chosen by me to do those extensions if possible is **DevOps**.
+The area of interest chosen by me to do those extensions if possible is ***DevOps***.
 
 ## Benefits of the challenge
 
@@ -29,7 +29,7 @@ I [successfully passed](https://www.credly.com/badges/7dd19137-0b34-47b3-8e50-6d
 
 ### Stage 1 - Creating Front End
 
-This section is about building the visual representation of resume using plain HTML, CSS and JavaScript (which gets more important on stage 2)
+This section is about building the visual representation of resume using plain HTML, CSS and JavaScript (which gets more important on stage 2).
 
 #### HTML
 
@@ -44,22 +44,22 @@ I've used grid + flex displays to create two a simple layout:
 
 #### CSS
 
-The resume should be just a little styled using _CSS_, to somewhat resemble the actual resume.
+The resume should be just a little styled using *CSS*, to somewhat resemble the actual resume document.
 
 #### JavaScript
 
 The resume should include simple JS script for counting number of visitors.\
-The first version is using `localStorage` class as a counter storage, later migrating to _AWS DynamoDB_.
+The first version is using `localStorage` class as a counter storage, later migrating to *AWS DynamoDB* for storing the visitors.
 
 #### Static assets
 
-The resume contains multiple icons in _SVG_ format.
+The resume contains multiple icons in *SVG* format.\
 All of them were downloaded under the [iconmonstr license](https://iconmonstr.com/license/) from [iconmonstr.com](https://iconmonstr.com/share-11-svg/).
 
 #### CloudFront
 
-The resume page is available only via CloudFront Distribution Name.
-The S3 Bucket serving the static content is private - OAC (Origin Access Control) is configured and associated with CloudFront Distribution to allow entering the resume page only from CDN.
+The resume page is available only via CloudFront Distribution Name.\
+The S3 Bucket serving the static content is private - OAC (Origin Access Control) is configured and associated with CloudFront Distribution to allow entering the resume page only from CDN.\
 The requests from HTTP are redirected to HTTPS.
 CloudFront Distribution is contained within `template.yaml` as a part of Infrastructure as Code setup.
 
@@ -78,11 +78,11 @@ CloudFront Distribution is contained within `template.yaml` as a part of Infrast
 
 ### Stage 2 - Building the API
 
-This section is about extending local visitor counter (written in JavaScript) to a full API which saves the values in AWS DynamoDB database
+This section is about extending local visitor counter (written in JavaScript) to a full API which saves the values in AWS DynamoDB database.
 
 #### Database
 
-The visitor counter is saved and retrieved from a single Table in AWS DynamoDB.
+The visitor counter is saved and retrieved from a single Table in AWS DynamoDB.\
 There is a single Item (record) in DynamoDB table, which gets constantly updated when a new visitor opens the page.
 
 | Primary key                | Attributes |
@@ -92,7 +92,8 @@ There is a single Item (record) in DynamoDB table, which gets constantly updated
 
 #### API
 
-The JavaScript code is not talking directly to the DynamoDB. Instead, Amazon API Gateway is set with one POST route, triggering Lambda function responsible for updating a visitor counter.
+The JavaScript code is not talking directly to the DynamoDB.\
+Instead, Amazon API Gateway is set with one POST route, triggering/proxying request to Lambda function responsible for updating a visitor counter.
 
 ```mermaid
 sequenceDiagram;
@@ -103,3 +104,37 @@ Lambda function->>DynamoDB: Increase visitor count by 1
 Lambda function-->>Website: Return total visitor count
 Website->>Client: Resume with up-to-date visitors
 ```
+
+#### Python
+
+Lambda Function, responsible for handling the business logic of an application (in this case, updating and returning overall visitors count) is written using Python *3.9*, which is the latest runtime version supported by the Lambda [as of writing this section](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) (01.04.2023).
+
+The Python code is tested using `pytest` framework and `moto` library (for mocking AWS resources) and test cases can be found inside `src/backend/tests/` directory.\
+All the versions of required frameworks,libraries and plugins for Python are defined in `requirements.txt` in `src/backend/lambda` directory.
+
+### Stage 3 - Frontend & Backend integration
+
+This section is about embedding the value coming from DynamoDB through AWS Lambda into the JavaScript code, making the page dynamically count and display the visitors number.
+
+#### Dynamic counter value
+
+The script responsible for retrieving and updating the counter is found in `src/frontend/scripts/visitCounter.js` file.\
+It makes an HTTP POST request to the API Gateway endpoint in order to retrieve & update counter value on each DOM load.
+
+### Step 4 - Automation & CI/CD
+
+#### Infrastructure as Code (IaC)
+
+All AWS resources are defined as *CloudFormation*/*SAM Template* from the beginning. The deployment is using an *AWS SAM CLI* to upload the "state" file to the AWS S3 Bucket and create requested resources.
+
+#### CI/CD
+
+To streamline the configuration changes, the deployment is not done manually, but rather executed in an automated manner using GitHub Actions and a dedicated pipeline workflow.\
+All steps and stages can be seen in `.github/workflows/pipeline.yaml` file.
+
+The pipeline automatically:
+
+- runs tests for both frontend (Cypress) and backend (Pytest)
+- on success of backend tests, it starts to build and deploy the SAM Template.
+- invalidates the CloudFront cache to allow accessing website with latest features instead of relying on local cache.
+- Synchronizes the assets (.html, .css, .img) files which could come up in a PR with S3 bucket
