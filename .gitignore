@@ -145,3 +145,7 @@ node_modules/
 
 # terraform state files
 **/*.tfstate
+
+# terraform s3 backend configuration
+!.terraform.lock.hcl
+*.hcl

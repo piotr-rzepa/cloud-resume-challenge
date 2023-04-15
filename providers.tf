@@ -10,6 +10,8 @@ terraform {
       version = "~> 3.4"
     }
   }
+  # The backend for different environment (main, dev) is passed using terraform init -backend-config=<backend config file>
+  backend "s3" {}
 }
 
 provider "aws" {
