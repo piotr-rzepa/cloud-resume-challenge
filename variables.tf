@@ -18,11 +18,6 @@ variable "aws_bucket_prefix" {
   type        = string
 }
 
-variable "aws_user_name" {
-  description = "Name of AWS user used to deploy the resources"
-  type        = string
-}
-
 variable "aws_cloudfront_oac_name" {
   description = "Name od AWS Cloudfront Origin Access Control"
   type        = string
@@ -44,4 +39,19 @@ variable "aws_dynamodb_table_name" {
 variable "aws_dynamodb_table_key_data" {
   description = "Key=value pair describing Hash key of DynamoDB Table and its type"
   type        = map(string)
+}
+
+variable "aws_api_gateway_name" {
+  description = "Name of the AWS API Gateway resource to handle requests"
+  type        = string
+}
+
+variable "aws_api_gateway_allowed_methods" {
+  description = "Allowed HTTP methods for API Gateway"
+  type        = list(string)
+}
+
+variable "aws_api_gateway_allow_headers" {
+  description = "Allowed HTTP headers for API Gateway"
+  type        = list(string)
 }
