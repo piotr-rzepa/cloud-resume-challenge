@@ -12,3 +12,8 @@ output "aws_api_gateway_invoke_url" {
   value       = "${module.api_gateway.apigatewayv2_api_api_endpoint}/visitors"
   description = "API Gateway invoke URL"
 }
+
+output "aws_cloudfront_distribution_id" {
+  value       = aws_cloudfront_distribution.s3_distribution.id
+  description = "Identifier for the distribution, used to invalidate cache in CI/CD"
+}
