@@ -31,7 +31,7 @@ I [successfully passed](https://www.credly.com/badges/7dd19137-0b34-47b3-8e50-6d
 
 This section is about building the visual representation of resume using plain HTML, CSS and JavaScript (which gets more important on stage 2).
 
-#### HTML
+#### 1.1 HTML
 
 The resume should be created using HTML. It does not have to be pretty or contain sublime styling, because the challenge is not about ideal styling and responsive web design.
 I've used grid + flex displays to create two a simple layout:
@@ -42,21 +42,21 @@ I've used grid + flex displays to create two a simple layout:
 | Cell 20: Education section       | Cell 21: Certificates section     |
 | Cell 30: Footer section          | Cell 31: Footer section           |
 
-#### CSS
+#### 1.2 CSS
 
 The resume should be just a little styled using *CSS*, to somewhat resemble the actual resume document.
 
-#### JavaScript
+#### 1.3 JavaScript
 
 The resume should include simple JS script for counting number of visitors.\
 The first version is using `localStorage` class as a counter storage, later migrating to *AWS DynamoDB* for storing the visitors.
 
-#### Static assets
+#### 1.4 Static assets
 
 The resume contains multiple icons in *SVG* format.\
 All of them were downloaded under the [iconmonstr license](https://iconmonstr.com/license/) from [iconmonstr.com](https://iconmonstr.com/share-11-svg/).
 
-#### CloudFront
+#### 1.5 CloudFront
 
 The resume page is available only via CloudFront Distribution Name.\
 The S3 Bucket serving the static content is private - OAC (Origin Access Control) is configured and associated with CloudFront Distribution to allow entering the resume page only from CDN.\
@@ -80,7 +80,7 @@ CloudFront Distribution is contained within `template.yaml` as a part of Infrast
 
 This section is about extending local visitor counter (written in JavaScript) to a full API which saves the values in AWS DynamoDB database.
 
-#### Database
+#### 2.1 Database
 
 The visitor counter is saved and retrieved from a single Table in AWS DynamoDB.\
 There is a single Item (record) in DynamoDB table, which gets constantly updated when a new visitor opens the page.
@@ -90,7 +90,7 @@ There is a single Item (record) in DynamoDB table, which gets constantly updated
 | Partition key: CounterName | count      |
 | visitors                   | 10         |
 
-#### API
+#### 2.2 API
 
 The JavaScript code is not talking directly to the DynamoDB.\
 Instead, Amazon API Gateway is set with one POST route, triggering/proxying request to Lambda function responsible for updating a visitor counter.
@@ -105,9 +105,11 @@ Lambda function-->>Website: Return total visitor count
 Website->>Client: Resume with up-to-date visitors
 ```
 
-#### Python
+#### 2.3 Python
 
 Lambda Function, responsible for handling the business logic of an application (in this case, updating and returning overall visitors count) is written using Python *3.9*, which is the latest runtime version supported by the Lambda [as of writing this section](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) (01.04.2023).
+
+**UPDATE 10.05.2023**: Python runtime upgraded to version 3.10, with preserved back-compatibility support for Python3.9
 
 The Python code is tested using `pytest` framework and `moto` library (for mocking AWS resources) and test cases can be found inside `src/backend/tests/` directory.\
 All the versions of required frameworks,libraries and plugins for Python are defined in `requirements.txt` in `src/backend/lambda` directory.
@@ -116,18 +118,61 @@ All the versions of required frameworks,libraries and plugins for Python are def
 
 This section is about embedding the value coming from DynamoDB through AWS Lambda into the JavaScript code, making the page dynamically count and display the visitors number.
 
-#### Dynamic counter value
+#### 3.1 Dynamic counter value
 
 The script responsible for retrieving and updating the counter is found in `src/frontend/scripts/visitCounter.js` file.\
 It makes an HTTP POST request to the API Gateway endpoint in order to retrieve & update counter value on each DOM load.
 
 ### Step 4 - Automation & CI/CD
 
-#### Infrastructure as Code (IaC)
+#### 4.1 Infrastructure as Code (IaC)
 
-All AWS resources are defined as *CloudFormation*/*SAM Template* from the beginning. The deployment is using an *AWS SAM CLI* to upload the "state" file to the AWS S3 Bucket and create requested resources.
+All AWS resources are provided via [Terraform](https://www.terraform.io/), with definitions located in `terraform/` directory:
 
-#### CI/CD
+- `providers.tf` - Contains configuration(s) of Terraform's providers (mostly AWS).
+
+- `main.tf` - Contains definition(s) of local values and references to existing AWS resources outside of Terraform state.
+
+- `api-gateway.tf` - Contains definition(s) of API Gateway with AWS Lambda integration for handling requests.
+
+- `cloudfront.tf` - Contains definition(s) of CloudFront distribution and Origin Access Control for accessing website only via CloudFront CDN.
+
+- `dynamodb.tf` - Contains definition(s) of DynamoDB table, used to store visitors' count value.
+
+- `lambda.tf` - Contains definition(s) of AWS Lambda function with Python runtime for handling visitors' counter updates.
+
+- `s3.tf` - Contains definition(s) of S3 Bucket for storing website static content.
+
+- `variables.tf` - Contains definition(s) of all user-defined variables used across Terraform configuration.
+
+- `outputs.tf` - Contains definition(s) of outputs displayed by `terraform output`:
+  - API Gateway invoke URL
+  - CloudFront domain name
+  - S3 bucket with static website content
+
+To deploy the configuration, first create a `backend.hcl` file in `terraform/` directory with definition of backend configuration for storing the Terraform state file:
+
+```bash
+bucket = <YOUR_BUCKET_NAME>
+region = <YOUR_AWS_REGION>
+key    = <YOUR_BUCKET_STATE_FILE_PATH>
+```
+
+Next, initialize Terraform working directory by running \
+`terraform init -backend-config=backend.hcl` \
+inside *terraform/* directory.
+
+Then, after Terraform downloading all the required providers, you can view the Terraform plan and then apply the configuration with: \
+
+```bash
+# In terraform/ directory
+terraform plan
+terraform apply
+```
+
+You may be prompted to provide variable values defined in `values.tf`. To avoid providing them during apply, create a `terraform.tfvars` file with keys defined by variable names and values defined by the user.
+
+#### 4.2 CI/CD
 
 To streamline the configuration changes, the deployment is not done manually, but rather executed in an automated manner using GitHub Actions and a dedicated pipeline workflow.\
 All steps and stages can be seen in `.github/workflows/pipeline.yaml` file.
