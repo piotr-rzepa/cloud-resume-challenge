@@ -17,8 +17,7 @@ env:
   FRONTEND_PATH: src/frontend
   DEPLOYMENT_REGION: eu-west-1
   TF_LOG: INFO
-  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
-  BUCKET_TF_STATE_KEY: ${{ secrets.BUCKET_TF_STATE_KEY }}
+  STATE_S3_BUCKET: ${{ secrets.BUCKET_TF_STATE }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -45,8 +44,8 @@ jobs:
         run: |
           pytest -vvv --capture=tee-sys --cov=${{ env.BACKEND_PATH }}
 
-  terraform:
-    name: "Terraform Infrastructure Change Management"
+  terragrunt:
+    name: "Terragrunt infrastructure change management"
     runs-on: ubuntu-22.04
     needs:
       - testing
@@ -55,53 +54,58 @@ jobs:
         shell: bash
         working-directory: ./terraform
     outputs:
-      s3_bucket: ${{ steps.s3_bucket.outputs.stdout }}
-      distribution_id: ${{ steps.distribution_id.outputs.stdout }}
+      s3_bucket: ${{ steps.s3_bucket.outputs.bucket_id }}
+      distribution_id: ${{ steps.distribution_id.outputs.distribution_id }}
     permissions: write-all
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
 
-      - name: Setup Terraform with specified version
-        uses: hashicorp/setup-terraform@v2
+      - name: Setup Terragrunt with specified version
+        uses: autero1/action-terragrunt@v1.3.2
         with:
-          terraform_version: 1.4.6
+          terragrunt_version: 0.45.10
 
-      - name: Terraform init
+      - name: Terragrunt init
         id: init
-        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE" -backend-config="region=$AWS_REGION" -backend-config="key=$BUCKET_TF_STATE_KEY"
+        run: terragrunt run-all init --terragrunt-non-interactive
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: eu-west-1
-          BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
-          BUCKET_TF_STATE_KEY: ${{ secrets.BUCKET_TF_STATE_KEY }}
+          STATE_S3_BUCKET: ${{ secrets.BUCKET_TF_STATE }}
 
-      - name: Terraform format
+      - name: Terragrunt format
         id: fmt
-        run: terraform fmt -check
+        run: terragrunt run-all fmt -check --terragrunt-non-interactive
 
-      - name: Terraform validate
+      - name: Terragrunt validate
         id: validate
-        run: terraform validate
+        run: |
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "validate<<$EOF" >> $GITHUB_OUTPUT
+          echo "$(terragrunt run-all validate --terragrunt-non-interactive)" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
 
-      - name: Terraform plan
+      - name: Terragrunt plan
         id: plan
         if: github.event_name == 'pull_request'
-        run: terraform plan -no-color -input=false
+        run: |
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "plan<<$EOF" >> $GITHUB_OUTPUT
+          echo "terragrunt\n$(terragrunt run-all plan -no-color -input=false --terragrunt-non-interactive)" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: eu-west-1
-          BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
-          BUCKET_TF_STATE_KEY: ${{ secrets.BUCKET_TF_STATE_KEY }}
+          STATE_S3_BUCKET: ${{ secrets.BUCKET_TF_STATE }}
 
-      - name: Summarize Terraform plan in comment
+      - name: Summarize Terragrunt plan in comment
         uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
-        env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
           script: |
             // 1. Retrieve existing bot comments for the PR
@@ -111,27 +115,27 @@ jobs:
               issue_number: context.issue.number,
             })
             const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes('Terraform Format and Style')
+              return comment.user.type === 'Bot' && comment.body.includes('Terragrunt Format and Style')
             })
 
             // 2. Prepare format of the comment
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            const output = `#### Terragrunt Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terragrunt Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terragrunt Validation 🤖\`${{ steps.validate.outcome }}\`
             <details><summary>Validation Output</summary>
 
             \`\`\`\n
-            ${{ steps.validate.outputs.stdout }}
+            ${{ env.validate }}
             \`\`\`
 
             </details>
 
-            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            #### Terragrunt Plan 📖\`${{ steps.plan.outcome }}\`
 
             <details><summary>Show Plan</summary>
 
             \`\`\`\n
-            ${process.env.PLAN}
+            ${{ env.plan }}
             \`\`\`
 
             </details>
@@ -155,32 +159,35 @@ jobs:
               })
             }
 
-      - name: Terraform Plan Status
+      - name: Terragrunt Plan Status
         if: steps.plan.outcome == 'failure'
         run: exit 1
 
-      - name: Terraform Apply
+      - name: Terragrunt Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
+        run: terragrunt run-all apply -auto-approve -input=false --terragrunt-non-interactive
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: eu-west-1
-          BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
-          BUCKET_TF_STATE_KEY: ${{ secrets.BUCKET_TF_STATE_KEY }}
+          STATE_S3_BUCKET: ${{ secrets.BUCKET_TF_STATE }}
 
       - name: Register output S3 bucket name for further reference
         id: s3_bucket
-        run: terraform output -raw aws_s3_website_bucket
+        working-directory: ./terraform/s3-cloudfront
+        run: |
+          echo "bucket_id=$(terragrunt output -raw bucket_id)" >> $GITHUB_OUTPUT
 
       - name: Register output CND distribution ID for further reference
         id: distribution_id
-        run: terraform output -raw aws_cloudfront_distribution_id
+        working-directory: ./terraform/s3-cloudfront
+        run: |
+          echo "distribution_id=$(terragrunt output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
 
   invalidate-cdn-cache:
     runs-on: ubuntu-22.04
     needs:
-      - terraform
+      - terragrunt
     name: Invalidate CDN cache on CloudFront
     steps:
       - name: Checkout the repository
@@ -197,17 +204,17 @@ jobs:
           AWS_REGION: eu-west-1
       - name: Invalidate CloudFront Cache
         env:
-          AWS_CF_DISTRIBUTION_ID: ${{ needs.terraform.outputs.distribution_id }}
+          AWS_CF_DISTRIBUTION_ID: ${{ needs.terragrunt.outputs.distribution_id }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ env.AWS_CF_DISTRIBUTION_ID }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id $AWS_CF_DISTRIBUTION_ID --paths "/*"
 
   sync-s3-bucket:
     runs-on: ubuntu-22.04
     needs:
       - invalidate-cdn-cache
-      - terraform
+      - terragrunt
     name: Sync S3 Bucket content
     steps:
       - name: Checkout the repository
@@ -217,7 +224,7 @@ jobs:
         with:
           args: --delete --exclude ${{ env.FRONTEND_PATH }}/test
         env:
-          AWS_S3_BUCKET: ${{ needs.terraform.outputs.s3_bucket }}
+          AWS_S3_BUCKET: ${{ needs.terragrunt.outputs.s3_bucket }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ env.DEPLOYMENT_REGION }}

@@ -29,11 +29,11 @@ I [successfully passed](https://www.credly.com/badges/7dd19137-0b34-47b3-8e50-6d
 
 ### Stage 1 - Creating Front End
 
-This section is about building the visual representation of resume using plain HTML, CSS and JavaScript (which gets more important on stage 2).
+This section is about building the visual representation of resume using plain HTML, CSS and JavaScript (which gets more important at stage 2).
 
 #### 1.1 HTML
 
-The resume should be created using HTML. It does not have to be pretty or contain sublime styling, because the challenge is not about ideal styling and responsive web design.
+The resume should be created using HTML. It does not have to be pretty or contain sublime styling, since the challenge is not about perfect styling and responsive web design.
 I've used grid + flex displays to create two a simple layout:
 
 | Cell 00: Short summary           | Cell 01: Social links             |
@@ -49,7 +49,7 @@ The resume should be just a little styled using *CSS*, to somewhat resemble the 
 #### 1.3 JavaScript
 
 The resume should include simple JS script for counting number of visitors.\
-The first version is using `localStorage` class as a counter storage, later migrating to *AWS DynamoDB* for storing the visitors.
+The first version was using `localStorage` class as a counter storage and then migrated to *AWS DynamoDB* Table for storing the visitors.
 
 #### 1.4 Static assets
 
@@ -58,23 +58,9 @@ All of them were downloaded under the [iconmonstr license](https://iconmonstr.co
 
 #### 1.5 CloudFront
 
-The resume page is available only via CloudFront Distribution Name.\
-The S3 Bucket serving the static content is private - OAC (Origin Access Control) is configured and associated with CloudFront Distribution to allow entering the resume page only from CDN.\
+The resume page is accessible only via CloudFront Distribution.\
+The S3 Bucket serving the static content has all all public access blocked - [OAC](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html) is configured with said S3 bucket as the origin with the bucket only allowing requests from CloudFront OAC.\
 The requests from HTTP are redirected to HTTPS.
-CloudFront Distribution is contained within `template.yaml` as a part of Infrastructure as Code setup.
-
-#### Q&A
-
-- What aspect of Chunk 1's work did you
-  find the most difficult?
-  - Going directly for IaC paradigm and creating resources using CloudFormation / SAM Template
-- Note one or two problems you
-  overcame to get the static site deployed
-  - By Default, The AWS S3 had a Bucket ACLs enabled, which was preventing me from applying bucket policy.
-    To fix this, I had to dig deep into AWS CloudFormation Documentation for S3 and find corresponding properties to set
-- What's something you'd have done time?
-  - I'd set automatic distribution ID discovery for CloudFront in the GitHub Actions (as of now, the distribution ID is set as secret and deleting the whole stack would require to update the distribution ID for cache invalidation)
-  - Completing DevOps mode for this stage taught me how to provide CI/CD for cloud-based deployment and how easy is to roll out the changes if the infrastructure is implemented using IaC paradigm
 
 ### Stage 2 - Building the API
 
@@ -93,7 +79,7 @@ There is a single Item (record) in DynamoDB table, which gets constantly updated
 #### 2.2 API
 
 The JavaScript code is not talking directly to the DynamoDB.\
-Instead, Amazon API Gateway is set with one POST route, triggering/proxying request to Lambda function responsible for updating a visitor counter.
+Instead, Amazon API Gateway is set with one POST route, proxying request to a Lambda function responsible for updating a visitor counter.
 
 ```mermaid
 sequenceDiagram;
@@ -127,50 +113,27 @@ It makes an HTTP POST request to the API Gateway endpoint in order to retrieve &
 
 #### 4.1 Infrastructure as Code (IaC)
 
-All AWS resources are provided via [Terraform](https://www.terraform.io/), with definitions located in `terraform/` directory:
+All AWS resources are provided via [Terraform](https://www.terraform.io/) wrapper [Terragrunt](https://terragrunt.gruntwork.io/).\
+The main usage of Terragrunt in this project is to provide a dynamic backend/providers configuration/ for each resource, thus reducing the code duplication. It also allows for deploying all the resources onto different environments more easily, by creating a set of common configuration options, inherited by all child modules.
 
-- `providers.tf` - Contains configuration(s) of Terraform's providers (mostly AWS).
+- `api_gateway-lambda/` - Contains API Gateway nad Lambda resources. They are placed in a single directory because both have dependencies on each other.
+- `dynamodb/` - Contains DynamoDB Table resource definition
+- `s3-cloudfront/` - Contains S3 Bucket and CloudFront Distribution, OAC resources. They are placed in a single directory because both have dependencies on each other.
 
-- `main.tf` - Contains definition(s) of local values and references to existing AWS resources outside of Terraform state.
+Because `api_gateway-lambda/` resources have dependency on both `dynamodb/` and `s3-cloudfront/`, you should first deploy the resources from those directories. Enter the corresponding directory and run
 
-- `api-gateway.tf` - Contains definition(s) of API Gateway with AWS Lambda integration for handling requests.
+> The Project is natively using S3 Bucket as a backend for storing the state.\
+> You should have existing S3 Bucket ready and export its name as a environment variable `export STATE_S3_BUCKET=<NAME OF YOUR BUCKET>`
 
-- `cloudfront.tf` - Contains definition(s) of CloudFront distribution and Origin Access Control for accessing website only via CloudFront CDN.
+`terragrunt init`
 
-- `dynamodb.tf` - Contains definition(s) of DynamoDB table, used to store visitors' count value.
+To download all required providers and modules, then run
 
-- `lambda.tf` - Contains definition(s) of AWS Lambda function with Python runtime for handling visitors' counter updates.
+`terragrunt apply`
 
-- `s3.tf` - Contains definition(s) of S3 Bucket for storing website static content.
+To see what is being deployed and after confirming the changes, enter `yes` to start the deployment.
 
-- `variables.tf` - Contains definition(s) of all user-defined variables used across Terraform configuration.
-
-- `outputs.tf` - Contains definition(s) of outputs displayed by `terraform output`:
-  - API Gateway invoke URL
-  - CloudFront domain name
-  - S3 bucket with static website content
-
-To deploy the configuration, first create a `backend.hcl` file in `terraform/` directory with definition of backend configuration for storing the Terraform state file:
-
-```bash
-bucket = <YOUR_BUCKET_NAME>
-region = <YOUR_AWS_REGION>
-key    = <YOUR_BUCKET_STATE_FILE_PATH>
-```
-
-Next, initialize Terraform working directory by running \
-`terraform init -backend-config=backend.hcl` \
-inside *terraform/* directory.
-
-Then, after Terraform downloading all the required providers, you can view the Terraform plan and then apply the configuration with: \
-
-```bash
-# In terraform/ directory
-terraform plan
-terraform apply
-```
-
-You may be prompted to provide variable values defined in `values.tf`. To avoid providing them during apply, create a `terraform.tfvars` file with keys defined by variable names and values defined by the user.
+> The Python code is archived during the deployment of AWS Lambda. This requires the same Python version to be available locally. I recommend using [pyenv](https://github.com/pyenv/pyenv) to manage multiple Python versions on your system and create a virtual environment with the corresponding version before running Terragrunt. You can see all the Python run-times supported by AWS Lambda [here](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html).
 
 #### 4.2 CI/CD
 
@@ -180,6 +143,11 @@ All steps and stages can be seen in `.github/workflows/pipeline.yaml` file.
 The pipeline automatically:
 
 - runs tests for both frontend (Cypress) and backend (Pytest)
-- on success of backend tests, it starts to build and deploy the SAM Template.
+  - Cypress smoke tests are run AFTER the infrastructure has been successfully deployed
+  - Backend tests using Pytest library are executed at the beginning of the pipeline and have to pass in order for deployment to proceed
+- on success of backend tests:
+  - Terraform init is run to download all providers and modules
+  - Terraform plan is executed and posted as a comment in the Pull Request
+  - The configuration is applied only, when PR is successfully merged to the `main` branch.
 - invalidates the CloudFront cache to allow accessing website with latest features instead of relying on local cache.
-- Synchronizes the assets (.html, .css, .img) files which could come up in a PR with S3 bucket
+- Synchronizes the assets (.html, .css, .img) files which could come up in a PR with S3 bucket.

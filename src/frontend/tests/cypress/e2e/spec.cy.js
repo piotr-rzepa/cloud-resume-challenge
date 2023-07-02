@@ -2,10 +2,10 @@
 
 const { expect } = require("chai");
 
-const RESUME_URL_CLOUDFRONT = "d25acivck9o5jv.cloudfront.net";
+const RESUME_URL_CLOUDFRONT = "d17jc86972lqmr.cloudfront.net";
 
 const API_GATEWAY_URL =
-  "https://cprrj9snd2.execute-api.eu-west-1.amazonaws.com/visitors";
+  "https://aeio29wxu0.execute-api.eu-west-1.amazonaws.com/visitors";
 
 describe("template spec", () => {
   it("should open a resume page", () => {
