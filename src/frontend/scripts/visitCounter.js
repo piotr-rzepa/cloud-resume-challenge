@@ -2,7 +2,7 @@
 
 const p = document.querySelector("#visit-counter");
 VISITORS_ENDPOINT =
-  "https://cprrj9snd2.execute-api.eu-west-1.amazonaws.com/visitors";
+  "https://aeio29wxu0.execute-api.eu-west-1.amazonaws.com/visitors";
 
 const updateCounter = async (event) => {
   const response = await fetch(VISITORS_ENDPOINT, {

@@ -1,0 +1,24 @@
+s3_force_destroy                            = true
+s3_object_lock_enabled                      = false
+s3_attach_deny_insecure_transport_policy    = true
+s3_attach_deny_incorrect_encryption_headers = false
+s3_attach_deny_incorrect_kms_key_sse        = false
+s3_block_public_acls                        = true
+s3_block_public_policy                      = true
+s3_restrict_public_buckets                  = true
+s3_ignore_public_acls                       = true
+
+cf_description                      = "CloudFront distribution for Cloud Resume Challenge S3 Bucket"
+cf_price_class                      = "PriceClass_100"
+cf_http_version                     = "http2and3"
+cf_is_ipv6_enabled                  = false
+cf_default_root_object              = "index.html"
+cf_create_oac                       = true
+cf_oac_description                  = "OAC for Cloude Resume Challenge S3 Bucket"
+cf_oac_origin_type                  = "s3"
+cf_oac_signinig_behavior            = "always"
+cf_oac_signinig_protocol            = "sigv4"
+cf_cache_allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+cf_cache_cached_methods             = ["GET", "HEAD"]
+cf_cache_viewer_protocol_policy     = "redirect-to-https"
+cf_cache_response_headers_policy_id = "5cc3b908-e619-4b99-88e5-2cf7f45965bd"

@@ -145,7 +145,8 @@ node_modules/
 
 # terraform s3 backend configuration
 !.terraform.lock.hcl
-*.hcl
+terraform/**/backend.tf
+terraform/**/provider.tf
 
 # terraform lambda artifacts directory
 builds
