@@ -1,5 +1,7 @@
 # Cloud Resume Challenge
 
+![architecture-diagram](./assets/architecture-diagram.png)
+
 Series of challenges, which deepen AWS knowledge and provide an opportunity to perform technical experience using AWS.
 The main goal is to create and deploy the static website hosting a resume of the pretender.
 
@@ -7,6 +9,30 @@ The additional steps include integrating it with database, providing an API, usi
 Apart from standard objective, most of the steps include optional extensions recommendation. They are different from the core task and focus on practicing concrete set of skills in one of the specific areas.
 
 The area of interest chosen by me to do those extensions if possible is ***DevOps***.
+
+## Table of Contents
+
+- [Cloud Resume Challenge](#cloud-resume-challenge)
+  - [Table of Contents](#table-of-contents)
+  - [Benefits of the challenge](#benefits-of-the-challenge)
+  - [Challenge stages](#challenge-stages)
+    - [Stage 0 - Certification](#stage-0---certification)
+    - [Stage 1 - Creating Front End](#stage-1---creating-front-end)
+      - [1.1 HTML](#11-html)
+      - [1.2 CSS](#12-css)
+      - [1.3 JavaScript](#13-javascript)
+      - [1.4 Static assets](#14-static-assets)
+      - [1.5 CloudFront](#15-cloudfront)
+    - [Stage 2 - Building the API](#stage-2---building-the-api)
+      - [2.1 Database](#21-database)
+      - [2.2 API](#22-api)
+      - [2.3 Python](#23-python)
+    - [Stage 3 - Frontend \& Backend integration](#stage-3---frontend--backend-integration)
+      - [3.1 Dynamic counter value](#31-dynamic-counter-value)
+    - [Step 4 - Automation \& CI/CD](#step-4---automation--cicd)
+      - [4.1 Infrastructure as Code (IaC)](#41-infrastructure-as-code-iac)
+      - [4.2 CI/CD](#42-cicd)
+
 
 ## Benefits of the challenge
 
@@ -81,15 +107,7 @@ There is a single Item (record) in DynamoDB table, which gets constantly updated
 The JavaScript code is not talking directly to the DynamoDB.\
 Instead, Amazon API Gateway is set with one POST route, proxying request to a Lambda function responsible for updating a visitor counter.
 
-```mermaid
-sequenceDiagram;
-Client->>Website: GET static content
-Website->>API Gateway: POST /visitor
-API Gateway->>Lambda function: Trigger
-Lambda function->>DynamoDB: Increase visitor count by 1
-Lambda function-->>Website: Return total visitor count
-Website->>Client: Resume with up-to-date visitors
-```
+![sequence-diagram](./assets/sequence-diagram.png)
 
 #### 2.3 Python
 
