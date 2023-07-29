@@ -32,7 +32,7 @@ The area of interest chosen by me to do those extensions if possible is ***DevOp
     - [Step 4 - Automation \& CI/CD](#step-4---automation--cicd)
       - [4.1 Infrastructure as Code (IaC)](#41-infrastructure-as-code-iac)
       - [4.2 CI/CD](#42-cicd)
-
+      - [4.3 Monitoring](#43-monitoring)
 
 ## Benefits of the challenge
 
@@ -137,15 +137,17 @@ The main usage of Terragrunt in this project is to provide a dynamic backend/pro
 - `api_gateway-lambda/` - Contains API Gateway nad Lambda resources. They are placed in a single directory because both have dependencies on each other.
 - `dynamodb/` - Contains DynamoDB Table resource definition
 - `s3-cloudfront/` - Contains S3 Bucket and CloudFront Distribution, OAC resources. They are placed in a single directory because both have dependencies on each other.
+- `sns/` - Contains SNS Topic, which sends an email to admin/operator when the CloudWatch Alarm related to the Api Gateway proxy Lambda function invocation's failure rate goes over 30%
+- `cloudwatch/` - Contains CloudWatch Alarm based on a metric query, which computes the % value of erroneous responses from Lambda function, informing the operator through SNS Topic Email subscription when it goes into ALARM state
 
-Because `api_gateway-lambda/` resources have dependency on both `dynamodb/` and `s3-cloudfront/`, you should first deploy the resources from those directories. Enter the corresponding directory and run
+Because `api_gateway-lambda/` resources have dependency on both `dynamodb/` and `s3-cloudfront/`, you should first deploy the resources from those directories. Enter the corresponding directory and run:
 
 > The Project is natively using S3 Bucket as a backend for storing the state.\
 > You should have existing S3 Bucket ready and export its name as a environment variable `export STATE_S3_BUCKET=<NAME OF YOUR BUCKET>`
 
 `terragrunt init`
 
-To download all required providers and modules, then run
+To download all required providers and modules, then run:
 
 `terragrunt apply`
 
@@ -164,8 +166,19 @@ The pipeline automatically:
   - Cypress smoke tests are run AFTER the infrastructure has been successfully deployed
   - Backend tests using Pytest library are executed at the beginning of the pipeline and have to pass in order for deployment to proceed
 - on success of backend tests:
-  - Terraform init is run to download all providers and modules
-  - Terraform plan is executed and posted as a comment in the Pull Request
+  - Terragrunt init is run to download all providers and modules
+  - Terragrunt plan is executed and posted as a comment in the Pull Request
   - The configuration is applied only, when PR is successfully merged to the `main` branch.
 - invalidates the CloudFront cache to allow accessing website with latest features instead of relying on local cache.
 - Synchronizes the assets (.html, .css, .img) files which could come up in a PR with S3 bucket.
+
+#### 4.3 Monitoring
+
+An [Amazon CloudWatch Alarm](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html) is used to watch a result of a math expression based on Lambda-related metric.\
+The metrics calculates the percentage of all Lambda requests which resulted in a failure, for example due to the missing permissions or misconfigured handler. The metrics is computed as follows:
+
+```math
+error_percentage = (invocations / errors) * 100
+```
+
+If the expression goes over 0.3 (30% of Lambda requests has failed within 5 minutes), the alarm goes to ALARM state and informs the administrator using connected [SNS topic](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/US_SetupSNS.html), which has a subscription with an administrator's email as an endpoint.
