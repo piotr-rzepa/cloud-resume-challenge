@@ -12,29 +12,58 @@ repos:
       - id: name-tests-test
       - id: requirements-txt-fixer
       - id: sort-simple-yaml
+      - id: fix-encoding-pragma
+      - id: requirements-txt-fixer
+      - id: check-merge-conflict
+
   - repo: https://github.com/pre-commit/mirrors-jshint
     rev: v2.13.6
     hooks:
       - id: jshint
-        name: JavaScript Linter
-  - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.77.2
-    hooks:
-      - id: terraform_fmt
-        args: ["--args=-recursive"]
-        name: Terraform canonical format reformat
+        name: Perform linting using jshint (JavaScript)
+
   - repo: https://github.com/pycqa/flake8
     rev: 6.0.0
     hooks:
       - id: flake8
-        name: Python flake8 Linter
+        name: Perform linting using flake8 (Python)
         args:
-          [
-            --count,
-            "--select=E9,F63,F7,F82",
-            --show-source,
-            --statistics,
-            --exit-zero,
-            --max-complexity=10,
-            --max-line-length=127,
-          ]
+          - --count
+          - --select=E9,F63,F7,F82
+          - --show-source
+          - --statistics
+          - --exit-zero
+          - --max-complexity=10
+          - --max-line-length=127
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.77.2
+    hooks:
+      - id: terraform_fmt
+        args: ["--hook-config=--retry-once-with-cleanup=true"]
+        name: Perform the validation of config files (Terraform)
+      - id: terraform_tflint
+        args:
+          - --args=--recursive
+          - --args=--minimum-failure-severity=error
+        name: Perform linting using tflint (Terraform)
+      - id: terraform_validate
+        name: Perform canonical formatting (Terraform)
+      - id: terraform_tfsec
+        args:
+          - --args=--exclude-downloaded-modules
+        name: Perform static analysis using tfsec (Terraform)
+      - id: terrascan
+        args:
+          - --args=--verbose
+          - --args=--policy-type=aws
+          - --args=--iac-type=terraform
+          - --args=--skip-rules=AC_AWS_0214
+          - --args=--severity=High
+        name: Perform static analysis using terrascan (Terraform)
+      - id: terraform_checkov
+        args:
+          - --args=--quiet
+          - --args=--soft-fail
+          - --args=--skip-results-upload
+        name: Perform static analysis using checkov (Terraform)

@@ -21,4 +21,4 @@ lambda_create_current_async_alias   = false
 lambda_create_current_trigger_alias = true
 lambda_authorization_type           = "AWS_IAM"
 lambda_memory_size                  = 128
-lambda_timeout                      = 60
+lambda_timeout                      = 15

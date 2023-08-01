@@ -20,6 +20,6 @@ data "aws_iam_policy_document" "lambda_dynamodb_access_policy" {
       "logs:CreateLogStream",
       "logs:PutLogEvents"
     ]
-    resources = ["${data.aws_dynamodb_table.this.arn}"]
+    resources = [data.aws_dynamodb_table.this.arn]
   }
 }

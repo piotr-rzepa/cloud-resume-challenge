@@ -21,6 +21,8 @@ module "lambda_function" {
   runtime             = var.lambda_runtime
   compatible_runtimes = var.lambda_compatible_runtimes
   architectures       = var.lambda_architectures
+  timeout             = var.lambda_timeout
+  memory_size         = var.lambda_memory_size
 
   source_path = var.lambda_source_path
   publish     = var.lambda_publish_new_version
