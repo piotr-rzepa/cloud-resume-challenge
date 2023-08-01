@@ -10,7 +10,7 @@ variable "protocol_type" {
 
   validation {
     condition     = var.protocol_type != "HTTP" || var.protocol_type != "WEBSOCKET"
-    error_message = "Valid protocol values are HTTP and WEBSOCKET"
+    error_message = "A Valid protocol values are HTTP and WEBSOCKET. Did you provide a wrong protocol type?"
   }
 }
 
@@ -65,7 +65,7 @@ variable "lambda_compatible_runtimes" {
 
   validation {
     condition     = length(var.lambda_compatible_runtimes) <= 5
-    error_message = "You can specify up to 5 compatible runtimes"
+    error_message = "Did you specify more than 5 compatible runtimes?"
   }
 }
 
@@ -75,7 +75,7 @@ variable "lambda_architectures" {
 
   validation {
     condition     = contains(var.lambda_architectures, "x86_64") || contains(var.lambda_architectures, "arm64")
-    error_message = "Valid values are ['x86_64'] and ['arm64']"
+    error_message = "Did you provide wrong architecture for Lambda? Support values are ['x86_64'] and ['arm64']."
   }
 
 }
@@ -134,7 +134,7 @@ variable "lambda_authorization_type" {
 
   validation {
     condition     = contains(["AWS_IAM", "NONE"], var.lambda_authorization_type)
-    error_message = "Allowed values are AWS_IAM, NONE"
+    error_message = "Did you provide wrong value for AWS Lambda authorization type? Allowed values are AWS_IAM or NONE."
   }
 
 }

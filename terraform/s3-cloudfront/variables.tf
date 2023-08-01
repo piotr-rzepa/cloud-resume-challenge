@@ -67,7 +67,7 @@ variable "cf_price_class" {
 
   validation {
     condition     = contains(["PriceClass_All", "PriceClass_200", "PriceClass_100"], var.cf_price_class)
-    error_message = "The value for price class must be one of PriceClass_All, PriceClass_200, PriceClass_100"
+    error_message = "The value for price class must be one of PriceClass_All, PriceClass_200, PriceClass_100."
   }
 }
 
@@ -77,7 +77,7 @@ variable "cf_http_version" {
 
   validation {
     condition     = contains(["http1.1", "http2", "http2and3", "http3"], var.cf_http_version)
-    error_message = "Allowed values are http1.1, http2, http2and3, and http3. The default is http2"
+    error_message = "Allowed values are http1.1, http2, http2and3, and http3. The default is http2."
   }
 }
 
@@ -136,7 +136,7 @@ variable "cf_cache_viewer_protocol_policy" {
 
   validation {
     condition     = contains(["redirect-to-https", "allow-all", "https-only"], var.cf_cache_viewer_protocol_policy)
-    error_message = "A viewer protocol policy must be one of redirect-to-https, allow-all, https-only"
+    error_message = "A viewer protocol policy must be one of redirect-to-https, allow-all, https-only."
   }
 }
 

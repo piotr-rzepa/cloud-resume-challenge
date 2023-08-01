@@ -24,7 +24,7 @@ variable "billing_mode" {
   description = "Name of the Billing mode for read/write capacity usage."
   validation {
     condition     = var.billing_mode == "PROVISIONED" || var.billing_mode == "PAY_PER_REQUEST"
-    error_message = "The valid values for billing modes are: PROVISIONED, PAY_PER_REQUEST"
+    error_message = "The valid values for billing modes are: PROVISIONED, PAY_PER_REQUEST."
   }
 }
 
