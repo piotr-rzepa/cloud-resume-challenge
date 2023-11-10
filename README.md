@@ -53,6 +53,10 @@ After completing the challenge, the practitioner is able to gain multiple skills
 First challenge is to complete [AWS Cloud Practitioner](https://aws.amazon.com/certification/certified-cloud-practitioner/) certification exam.\
 I [successfully passed](https://www.credly.com/badges/7dd19137-0b34-47b3-8e50-6d3acf195a16/public_url) the exam on 20.01.2023
 
+> **UPDATE 10/2023**: I have recently passed [AWS Certified Solutions Architect – Associate](https://aws.amazon.com/certification/certified-solutions-architect-associate/) exam.\
+> Thanks for everyone who supported me on the journey to certification!\
+> [Here](https://www.credly.com/badges/f78e6778-b03b-48dd-bde4-5f6b330cdfb2/public_url) you can see my credly badge.
+
 ### Stage 1 - Creating Front End
 
 This section is about building the visual representation of resume using plain HTML, CSS and JavaScript (which gets more important at stage 2).
@@ -60,13 +64,15 @@ This section is about building the visual representation of resume using plain H
 #### 1.1 HTML
 
 The resume should be created using HTML. It does not have to be pretty or contain sublime styling, since the challenge is not about perfect styling and responsive web design.
-I've used grid + flex displays to create two a simple layout:
+I've used grid + flex displays to create simple layout two-colum layout:
 
-| Cell 00: Short summary           | Cell 01: Social links             |
-| -------------------------------- | --------------------------------- |
-| Cell 10: Work experience section | Cell 11: Technical skills section |
-| Cell 20: Education section       | Cell 21: Certificates section     |
-| Cell 30: Footer section          | Cell 31: Footer section           |
+| Left column                       | Right column                       |
+| --------------------------------- | ---------------------------------- |
+| Cell 10: Introduction section     | Cell 11: Social links section      |
+| Cell 20: Work experience section  | Cell 21: Technical skills section  |
+| Cell 30: Work experience section  | Cell 31: Personal projects section |
+| Cell 40: Education section        | Cell 41: Certificates section      |
+| Cell 50: Footer section           | Cell 51: Footer section            |
 
 #### 1.2 CSS
 
@@ -113,7 +119,7 @@ Instead, Amazon API Gateway is set with one POST route, proxying request to a La
 
 Lambda Function, responsible for handling the business logic of an application (in this case, updating and returning overall visitors count) is written using Python *3.9*, which is the latest runtime version supported by the Lambda [as of writing this section](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html) (01.04.2023).
 
-**UPDATE 10.05.2023**: Python runtime upgraded to version 3.10, with preserved back-compatibility support for Python3.9
+**UPDATE 10.05.2023**: Python runtime upgraded to version 3.10, with back-compatibility support for Python3.9 preserved.
 
 The Python code is tested using `pytest` framework and `moto` library (for mocking AWS resources) and test cases can be found inside `src/backend/tests/` directory.\
 All the versions of required frameworks,libraries and plugins for Python are defined in `requirements.txt` in `src/backend/lambda` directory.
@@ -178,7 +184,7 @@ An [Amazon CloudWatch Alarm](https://docs.aws.amazon.com/AmazonCloudWatch/latest
 The metrics calculates the percentage of all Lambda requests which resulted in a failure, for example due to the missing permissions or misconfigured handler. The metrics is computed as follows:
 
 ```math
-error_percentage = (invocations / errors) * 100
+error percentage = (invocations / errors) * 100
 ```
 
-If the expression goes over 0.3 (30% of Lambda requests has failed within 5 minutes), the alarm goes to ALARM state and informs the administrator using connected [SNS topic](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/US_SetupSNS.html), which has a subscription with an administrator's email as an endpoint.
+If the expression goes over 0.3 (30% of Lambda requests have failed within 5 minutes), the alarm goes to ALARM state and informs the administrator using connected [SNS topic](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/US_SetupSNS.html), which has a subscription with an administrator's email as an endpoint.
